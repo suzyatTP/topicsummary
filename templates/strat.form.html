@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Strategic / Ad Hoc Topic Summary</title>
+  <style>
+    body {
+      font-family: Helvetica, sans-serif;
+      margin: 30px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .first-form-row {
+      margin-top: 20px;
+    }
+
+    /* Alternate background for each major row or group */
+    .form-row,
+    textarea[name="Problem"],
+    textarea[name="Outcome"],
+    textarea[name="Recommendation"],
+    textarea[name="Decision"] {
+      background-color: #ffffff;
+      padding: 15px;
+      border-radius: 6px;
+    }
+
+    .form-row,
+    table,
+    textarea[name^="Action"] {
+      background-color: #f2f2f2eb;
+      padding: 15px;
+      border-radius: 6px;
+    }
+
+    /* Optional: give some breathing room between blocks */
+    textarea,
+    table {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    
+    .header {
+      background-color: #272e3d;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-text {
+      font-family: Helvetica, sans-serif;
+      font-size: 16px;
+    }
+
+    label {
+      font-family: Helvetica, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    textarea, input[type="text"] {
+      font-size: 16px;
+      font-family: Helvetica, sans-serif;
+    }
+
+    textarea {
+      width: 800px;
+      height: 100px;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    table td:first-child {
+      font-weight: bold;
+      font-family: helvetica, sans-serif;
+      font-size: 16px;
+    }
+
+    .section-header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-family: Helvetica, sans-serif;
+    }
+
+    .small-label {
+      font-size: 14px;
+      font-weight: normal;
+      font-family: Helvetica, sans-serif;
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 5px;
+      vertical-align: top;
+    }
+
+    td textarea {
+      width: 300px;
+      height: 100px;
+    }
+
+    input[type="text"] {
+      width: 300px;
+    }
+
+    select {
+    font-size: 16px !important;
+    padding: 5px !important;   
+    width: 300px !important;    
+    }
+
+    button {
+    font-size: 16px;         /* Bigger text */
+    font-weight: bold;       /* Bold text */
+    padding: 12px 20px;      /* Bigger button size */
+    border-radius: 6px;      /* Optional: rounded corners */
+    background-color: #272e3d; /* Optional: match header style */
+    color: white;              /* Optional: white text */
+    border: none;             /* Optional: clean look */
+    cursor: pointer;          /* Pointer cursor on hover */
+    margin: 5px;              /* Optional: spacing between buttons */
+    }
+
+button:hover {
+  background-color: #3c465c;  /* Optional: subtle hover effect */
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-text">
+      <div>Turning Point for God</div>
+      <h2>Strategic / Ad Hoc Topic Summary</h2>
+    </div>
+    <div class="logo-container">
+      <img src="{{ url_for('static', filename='overlay_icon.png') }}" alt="Logo" width="50">
+    </div>
+  </div>
+
+  <form method="GET" action="/">
+    <label for="draft">Load Draft:</label>
+    <select name="draft" onchange="this.form.submit()">
+      <option value="">-- New Draft --</option>
+      {% for draft in drafts %}
+        <option value="{{ draft }}" {% if selected_draft == draft %}selected{% endif %}>{{ draft }}</option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <form action="/submit" method="POST">
+
+    
+    <div class="form-row first-form-row">
+      <div class="form-group">
+        <label for="draft_name">Draft Name:</label>
+        <input type="text" id="draft_name" name="draft_name" value="{{ selected_draft or '' }}" />
+      </div>
+      <div class="form-group">
+        <label for="Topic">Topic:</label>
+        <input type="text" id="Topic" name="Topic" value="{{ data.get('Topic', '') }}" />
+      </div>
+    </div>
+
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label for="PointPerson">Point Person:</label>
+        <input type="text" id="PointPerson" name="PointPerson" value="{{ data.get('PointPerson', '') }}" />
+      </div>
+      <div class="form-group">
+        <label for="Role">Role of Executive Team (consult, inform, decide):</label>
+        <input type="text" id="Role" name="Role" value="{{ data.get('Role', '') }}" />
+      </div>
+      <div class="form-group">
+        <label for="Sponsor">Executive Sponsor:</label>
+        <input type="text" id="Sponsor" name="Sponsor" value="{{ data.get('Sponsor', '') }}" />
+      </div>
+    </div>
+
+  
+    <p>
+      <label for="Problem">Problem Definition:</label><br>
+      <textarea id="Problem" name="Problem">{{ data.get('Problem', '') }}</textarea>
+    </p>
+  
+    <p>
+      <label for="Outcome">Outcome Description:</label><br>
+      <textarea id="Outcome" name="Outcome">{{ data.get('Outcome', '') }}</textarea>
+    </p>
+  
+    <p>
+      <label for="Recommendation">Primary Recommendation:</label><br>
+      <textarea id="Recommendation" name="Recommendation">{{ data.get('Recommendation', '') }}</textarea>
+    </p>
+  
+
+    <h3>Options Table</h3>
+    <table>
+      <tr>
+        <th></th>
+        <th>Option 1</th>
+        <th>Option 2</th>
+        <th>Option 3</th>
+      </tr>
+      {% for field in ["Description", "Pros", "Cons", "Benefits/Revenue", "Obstacles"] %}
+      <tr>
+        <td>{{ field }}</td>
+        <td><textarea name="Option1{{ field }}">{{ data.get('Option1' + field, '') }}</textarea></td>
+        <td><textarea name="Option2{{ field }}">{{ data.get('Option2' + field, '') }}</textarea></td>
+        <td><textarea name="Option3{{ field }}">{{ data.get('Option3' + field, '') }}</textarea></td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <p><label>Final Decision:<br>
+      <textarea name="Decision" style="width: 1100px">{{ data.get('Decision', '') }}</textarea></label></p>
+
+      <h3 class="section-header">Key Actions (Who, What, When?)</h3>
+      {% for i in range(1, 6) %}
+        <p>
+          <label class="small-label">Key Action {{ i }}:</label><br>
+          <textarea name="Action{{ i }}">{{ data.get('Action' ~ i, '') }}</textarea>
+        </p>
+      {% endfor %}      
+      
+    <button type="submit" name="action" value="save">Save Draft</button>
+    <button type="submit" name="action" value="submit">Generate PDF</button>
+    <button type="submit" name="action" value="delete">Delete Saved Draft</button>
+
+    <a href="/" style="text-decoration: none;">
+      <button type="button">New Draft</button>
+    </a>
+
+  </form>
+
+  <hr>
+<footer style="text-align: center; margin-top: 40px;">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Your Logo" style="width: 150px; height: auto;">
+    <p style="font-size: 12px; color: #888;">Turning Point for God</p>
+</footer>
+
+</body>
+</html>

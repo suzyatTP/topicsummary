@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Image Overlay Test</title>
+  <style>
+    body {
+      background-color: #f0f0f0;
+      font-family: Helvetica, sans-serif;
+      padding: 40px;
+    }
+
+    .header-bar {
+      background-color: #232834;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .title-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .title-group small {
+      font-size: 12px;
+    }
+
+    .title-group strong {
+      font-size: 16px;
+    }
+
+    .logo-stack {
+      position: relative;
+      width: 40px;
+      height: 40px;
+    }
+
+    .logo-stack img {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div class="title-group">
+      <small>Turning Point for God</small>
+      <strong>Strategic / Ad hoc Topic Summary</strong>
+    </div>
+    <div class="logo-stack">
+      <img src="{{ url_for('static', filename='header_logo.png') }}" alt="Base Logo">
+      <img src="{{ url_for('static', filename='overlay_icon.png') }}" alt="Overlay Logo">
+    </div>
+  </div>
+
+  <h2 style="margin-top: 40px;">If you can see both images stacked in the top right, it's working!</h2>
+</body>
+</html>
