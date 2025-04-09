@@ -7,6 +7,9 @@ import io
 import json
 import psycopg2
 
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import session
+
 app = Flask(__name__)
 def get_db_connection():
     return psycopg2.connect(os.environ.get("DATABASE_URL"))
@@ -16,36 +19,78 @@ DB_FILE = 'drafts.db'
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
+
+    # Create users table
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    # Update drafts table to associate drafts with users
     c.execute("""
         CREATE TABLE IF NOT EXISTS drafts (
             id SERIAL PRIMARY KEY,
-            name TEXT UNIQUE NOT NULL,
-            content TEXT NOT NULL
+            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(name, user_id)
         )
     """)
+
     conn.commit()
     conn.close()
 
 init_db()
 
 # --- Helper functions for DB ---
+
+def get_or_create_user_id():
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    if ip and ',' in ip:
+        ip = ip.split(',')[0]  # If multiple IPs, take the first (original client)
+
+    conn = get_db_connection()
+    c = conn.cursor()
+    c.execute("SELECT id FROM users WHERE email = %s", (ip,))
+    user = c.fetchone()
+    if user:
+        user_id = user[0]
+    else:
+        c.execute(
+            "INSERT INTO users (email, password_hash) VALUES (%s, %s) RETURNING id",
+            (ip, generate_password_hash("temporary"))
+        )
+        user_id = c.fetchone()[0]
+        conn.commit()
+    conn.close()
+    return user_id
+
 def save_draft_to_db(name, content_dict):
+    user_id = get_or_create_user_id()
     conn = get_db_connection()
     c = conn.cursor()
     json_data = json.dumps(content_dict)
     c.execute("""
-        INSERT INTO drafts (name, content)
-        VALUES (%s, %s)
-        ON CONFLICT (name)
-        DO UPDATE SET content = EXCLUDED.content
-    """, (name, json_data))
+        INSERT INTO drafts (name, content, user_id)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (name, user_id)
+        DO UPDATE SET content = EXCLUDED.content,
+                      updated_at = CURRENT_TIMESTAMP
+    """, (name, json_data, user_id))
     conn.commit()
     conn.close()
 
 def load_draft_from_db(name):
+    user_id = get_or_create_user_id()
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT content FROM drafts WHERE name = %s", (name,))
+    c.execute("SELECT content FROM drafts WHERE name = %s AND user_id = %s", (name, user_id))
     row = c.fetchone()
     conn.close()
     if row:
@@ -53,17 +98,19 @@ def load_draft_from_db(name):
     return {}
 
 def list_drafts():
+    user_id = get_or_create_user_id()
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT name FROM drafts")
+    c.execute("SELECT name FROM drafts WHERE user_id = %s", (user_id,))
     drafts = [row[0] for row in c.fetchall()]
     conn.close()
     return drafts
 
 def delete_draft(name):
+    user_id = get_or_create_user_id()
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("DELETE FROM drafts WHERE name = %s", (name,))
+    c.execute("DELETE FROM drafts WHERE name = %s AND user_id = %s", (name, user_id))
     conn.commit()
     conn.close()
 
