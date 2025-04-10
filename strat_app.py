@@ -50,26 +50,33 @@ init_db()
 
 # --- Helper functions for DB ---
 
+import uuid
+from flask import make_response
+
 def get_or_create_user_id():
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    if ip and ',' in ip:
-        ip = ip.split(',')[0]  # If multiple IPs, take the first (original client)
+    user_id = request.cookies.get('user_id')
+    if not user_id:
+        # generate new UUID
+        user_id = str(uuid.uuid4())
 
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT id FROM users WHERE email = %s", (ip,))
+    c.execute("SELECT id FROM users WHERE email = %s", (user_id,))
     user = c.fetchone()
     if user:
-        user_id = user[0]
+        db_user_id = user[0]
     else:
         c.execute(
             "INSERT INTO users (email, password_hash) VALUES (%s, %s) RETURNING id",
-            (ip, generate_password_hash("temporary"))
+            (user_id, generate_password_hash("temporary"))
         )
-        user_id = c.fetchone()[0]
+        db_user_id = c.fetchone()[0]
         conn.commit()
     conn.close()
-    return user_id
+
+    # Store the UUID as a cookie in the response later
+    request.user_cookie_id = user_id  # store temporarily for response to use
+    return db_user_id
 
 def save_draft_to_db(name, content_dict):
     user_id = get_or_create_user_id()
@@ -157,7 +164,14 @@ def get_text_height(text, max_width, font_name="Helvetica", font_size=10, line_h
 def form():
     draft_name = request.args.get("draft")
     data = load_draft_from_db(draft_name) if draft_name else {}
-    return render_template('form.html', data=data, drafts=list_drafts(), selected_draft=draft_name)
+    response = make_response(render_template('form.html', data=data, drafts=list_drafts(), selected_draft=draft_name))
+
+    if hasattr(request, 'user_cookie_id'):
+        response.set_cookie('user_id', request.user_cookie_id, max_age=60*60*24*365)  # 1 year
+
+    return response
+
+from flask import make_response
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -168,16 +182,27 @@ def submit():
     if action == "save":
         if not draft_name:
             flash("Please enter a name for your draft.")
+            response = make_response(redirect(url_for('form')))
         else:
             save_draft_to_db(draft_name, data)
             flash(f"Draft '{draft_name}' saved successfully.")
-        return redirect(url_for('form', draft=draft_name))
+            response = make_response(redirect(url_for('form', draft=draft_name)))
 
-    if action == "delete":
+    elif action == "delete":
         if draft_name:
             delete_draft(draft_name)
             flash(f"Draft '{draft_name}' has been deleted.")
-        return redirect(url_for('form'))
+        response = make_response(redirect(url_for('form')))
+
+    else:
+        # fallback redirect if action is unknown
+        response = make_response(redirect(url_for('form')))
+
+    # Set cookie for user ID
+    if hasattr(request, 'user_cookie_id'):
+        response.set_cookie('user_id', request.user_cookie_id, max_age=60 * 60 * 24 * 365)  # 1 year
+
+    return response
 
     # --- PDF Generation ---
     buffer = io.BytesIO()
