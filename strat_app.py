@@ -188,21 +188,31 @@ def submit():
             flash(f"Draft '{draft_name}' saved successfully.")
             response = make_response(redirect(url_for('form', draft=draft_name)))
 
+        if hasattr(request, 'user_cookie_id'):
+            response.set_cookie('user_id', request.user_cookie_id, max_age=60 * 60 * 24 * 365)
+        return response
+
     elif action == "delete":
         if draft_name:
             delete_draft(draft_name)
             flash(f"Draft '{draft_name}' has been deleted.")
         response = make_response(redirect(url_for('form')))
+        if hasattr(request, 'user_cookie_id'):
+            response.set_cookie('user_id', request.user_cookie_id, max_age=60 * 60 * 24 * 365)
+        return response
 
-    else:
-        # fallback redirect if action is unknown
-        response = make_response(redirect(url_for('form')))
+    elif action == "submit":
+        # === PDF GENERATION LOGIC GOES HERE ===
+        buffer = io.BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        # ... your PDF drawing logic here ...
+        p.save()
+        buffer.seek(0)
+        pdf_filename = f"{draft_name or 'Strategic_Topic_Summary'}.pdf"
+        return send_file(buffer, as_attachment=True, download_name=pdf_filename, mimetype='application/pdf')
 
-    # Set cookie for user ID
-    if hasattr(request, 'user_cookie_id'):
-        response.set_cookie('user_id', request.user_cookie_id, max_age=60 * 60 * 24 * 365)  # 1 year
-
-    return response
+    # Fallback
+    return redirect(url_for('form'))
 
     # --- PDF Generation ---
     buffer = io.BytesIO()
