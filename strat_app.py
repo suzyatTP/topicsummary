@@ -203,7 +203,7 @@ def submit():
     p.setFont("Helvetica-Bold", 16)
     p.drawString(50, height - 50, "Strategic / Ad hoc Topic Summary")
     logo_path = os.path.join("static", "overlay_icon.png")
-        if os.path.exists(logo_path):
+    if os.path.exists(logo_path):
         img = ImageReader(logo_path)
         iw, ih = img.getSize()
         scale = 40 / iw  # scale based on desired width
