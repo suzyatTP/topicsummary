@@ -204,10 +204,7 @@ def submit():
     p.drawString(50, height - 50, "Strategic / Ad hoc Topic Summary")
     logo_path = os.path.join("static", "overlay_icon.png")
     if os.path.exists(logo_path):
-        img = ImageReader(logo_path)
-        iw, ih = img.getSize()
-        scale = 40 / iw  # scale based on desired width
-        p.drawImage(img, width - 70, height - (ih * scale) - 10, width=40, height=ih * scale, mask='auto')
+        p.drawImage(logo_path, width - 70, height - 60, width=40, height=40, mask='auto')
 
     p.setFillColor(colors.black)
     y = height - 90
